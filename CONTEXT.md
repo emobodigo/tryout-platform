@@ -17,11 +17,11 @@ Belahan materi di dalam satu Jenis Tryout (mis. TWK, TIU, TKP) yang menaungi Soa
 _Avoid_: kategori soal, subtes, subjek
 
 **Bentuk Soal**:
-Wujud pertanyaan: `pilihan_ganda` (tepat satu jawaban benar), `benar_salah` (satu pernyataan saja atau beberapa pernyataan sekaligus), atau `menjodohkan` (memasangkan dua lajur). Dipilih Admin saat menyusun Soal.
+Wujud pertanyaan: `single_choice` (tepat satu jawaban benar), `true_false` (satu pernyataan saja atau beberapa pernyataan sekaligus), atau `matching` (memasangkan dua lajur). Dipilih Admin saat menyusun Soal.
 _Avoid_: tipe soal, jenis soal, question type
 
 **Mode Penilaian**:
-Cara sebuah Pengelompokan Soal memberi poin. `utuh`: semua kunci harus benar baru keluar poin (gaya TWK/TIU). `berbobot`: setiap opsi jawaban membawa nilainya sendiri (gaya TKP).
+Cara sebuah Pengelompokan Soal memberi poin. `all_or_nothing`: semua kunci harus benar baru keluar poin (gaya TWK/TIU). `weighted`: setiap opsi jawaban membawa nilainya sendiri (gaya TKP).
 _Avoid_: scoring mode, penilaian parsial
 
 **Bobot**:
@@ -93,7 +93,7 @@ Pilihan Peserta atas satu Soal di dalam sebuah Attempt; satu Soal hanya punya sa
 _Avoid_: response, answer sheet
 
 **Mode Timer**:
-Aturan waktu sebuah Tryout. `global`: satu hitungan mundur untuk seluruh Attempt dan Peserta bebas berpindah Soal. `keras`: setiap Soal punya jatah sendiri (total waktu ÷ jumlah Soal) dan Peserta berpindah paksa saat jatahnya habis tanpa bisa kembali; menekan Lanjut lebih awal menghanguskan sisa jatah Soal itu, dan Attempt berakhir saat Soal terakhir selesai atau jatahnya habis. Mode dipilih Admin per Tryout.
+Aturan waktu sebuah Tryout. `global`: satu hitungan mundur untuk seluruh Attempt dan Peserta bebas berpindah Soal. `strict`: setiap Soal punya jatah sendiri (total waktu ÷ jumlah Soal) dan Peserta berpindah paksa saat jatahnya habis tanpa bisa kembali; menekan Lanjut lebih awal menghanguskan sisa jatah Soal itu, dan Attempt berakhir saat Soal terakhir selesai atau jatahnya habis. Mode dipilih Admin per Tryout.
 _Avoid_: timer type, mode waktu, timer per soal
 
 **Peserta**:

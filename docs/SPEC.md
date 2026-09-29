@@ -1,157 +1,202 @@
-# SPEC — Tryout Platform (Fase 1: Backend API)
+# SPEC — Tryout Platform (Phase 1: Backend API)
 
-Istilah domain dipakai persis seperti `CONTEXT.md`; keputusan besar tercatat di `docs/adr/`.
-Lingkup fase 1: **backend saja** — API REST + Swagger + seeder, tanpa frontend.
+Phase 1 delivers **the backend only**: a REST API with Swagger documentation and a demo seeder. No frontend.
 
-## 1. Lingkup
+Vocabulary follows `CONTEXT.md`. Section 1.1 maps each English name to its glossary term. The English names are the names used in code.
 
-Backend API yang membuat satu platform tryout berjalan ujung ke ujung:
+## 1. Scope
 
-- Master `Jenis Tryout` (CPNS, BUMN, OJK) beserta `Pengelompokan Soal` (TWK/TIU/TKP) dan aturan skornya.
-- `Bank Soal` tiga bentuk: `pilihan_ganda`, `benar_salah`, `menjodohkan`, lengkap dengan `Pembahasan` dan `Lampiran` gambar.
-- `Tryout` (paket) dengan total waktu, `Mode Timer`, dan `Kuota Soal`.
-- `Attempt`: undian soal, jawaban bertimer, pengumpulan, skor per `Pengelompokan Soal`, status `Lulus`.
-- `Riwayat` serta `Pembahasan` yang dibatasi `Hak Pembahasan`.
-- Akun: registrasi mandiri, peran `Peserta`/`Admin`/`Superadmin`.
+The API makes one Tryout platform work end to end:
 
-## 2. Di luar lingkup fase 1
+- Master data: `Tryout Type` (CPNS, BUMN, OJK) with its `Question Group`s (TWK, TIU, TKP) and their grading rules.
+- `Question Bank` for three question forms: `single_choice`, `true_false`, `matching`. Each Question carries an optional `Explanation` and optional image `Attachment`s.
+- `Tryout` (a package) with a total time, a `Timer Mode`, and a `Question Quota` per group.
+- `Attempt`: the question draw, timed answers, submission, a `Score` per group, and the `Passed` status.
+- `History` and `Explanation`, both gated by the `Explanation Access` flag.
+- Accounts: self-registration, and the roles `Participant`, `Admin`, `Superadmin`.
 
-Sengaja ditunda (rancangan tetap dicatat, kode menyusul):
+### 1.1 Vocabulary map
 
-| Ditunda | Alasan |
+| English name (code) | `CONTEXT.md` term |
 | --- | --- |
-| Modul `Scraping` + layar `Staging`/`Promosi` | belum ada situs target untuk diuji |
-| Ekspor CSV hasil | cukup daftar hasil di panel Admin nanti |
-| Panel Admin, seluruh frontend SolidJS | fase 2 |
-| Berkas deploy (Dockerfile/compose) | fokus dev lokal dulu |
-| Email (verifikasi, kirim tautan reset) | lupa password disetel ulang Admin |
-| Pembayaran/paket berbayar | katalog bebas diakses |
-| Statistik per Soal (persentase benar) | menyusul |
+| Tryout Type | Jenis Tryout |
+| Tryout | Tryout |
+| Question Group | Pengelompokan Soal |
+| Question Form | Bentuk Soal |
+| Grading Mode | Mode Penilaian |
+| Weight | Bobot |
+| Threshold | Nilai Ambang |
+| Score | Skor |
+| Passed | Lulus |
+| Question | Soal |
+| Question Bank | Bank Soal |
+| Staging | Staging |
+| Scraping | Scraping |
+| Promotion | Promosi |
+| Explanation | Pembahasan |
+| Attachment | Lampiran |
+| Explanation Access | Hak Pembahasan |
+| Question Quota | Kuota Soal |
+| Question Draw | Undian Soal |
+| Attempt | Attempt |
+| History | Riwayat |
+| Answer | Jawaban |
+| Timer Mode | Mode Timer |
+| Participant | Peserta |
+| Admin / Superadmin | Admin / Superadmin |
 
-## 3. Model domain
-
-Hierarki: `Jenis Tryout` → (`Pengelompokan Soal` → `Soal`) dan `Jenis Tryout` → `Tryout` → `Attempt` → `Riwayat`.
+Enum values:
 
 ```
-User              id, email (unik), passwordHash, nama, peran, hakPembahasan, status, createdAt, updatedAt
-RefreshToken      id, userId, tokenHash, kedaluwarsaPada, dicabutPada, createdAt
-
-JenisTryout       id, slug (unik), nama, deskripsi, urutan, aktif, timestamps
-Pengelompokan     id, jenisTryoutId, nama, urutan, bobot, modePenilaian(utuh|berbobot), nilaiAmbang, timestamps
-                  unik: (jenisTryoutId, nama)
-
-Soal              id, pengelompokanId, bentuk(pilihan_ganda|benar_salah|menjodohkan), teks, pembahasan (nullable),
-                  aktif, timestamps
-OpsiJawaban       id, soalId, teks, urutan, kunci(boolean), nilai(int, 0..bobot)      -- pilihan_ganda
-Pernyataan        id, soalId, teks, urutan, kunci(boolean), nilai(int, 0..bobot)      -- benar_salah
-Pasangan          id, soalId, kiri, kanan, urutan, nilai(int, 0..bobot)               -- menjodohkan
-                  jumlah Soal.kunci benar untuk pilihan_ganda tepat 1; benar_salah boleh 1 pernyataan saja
-
-Lampiran          id, soalId, pada(soal|pembahasan), path, mime, ukuranByte, urutan, createdAt
-
-Tryout            id, jenisTryoutId, slug (unik), judul, deskripsi, totalWaktuDetik, modeTimer(global|keras),
-                  status(draf|aktif), timestamps
-KuotaSoal         id, tryoutId, pengelompokanId, jumlah                                 unik: (tryoutId, pengelompokanId)
-
-Attempt           id, tryoutId, pesertaId, modeTimer, totalWaktuDetik, jumlahSoal, jatahSoalDetik (keras),
-                  mulaiPada, deadlinePada, status(berjalan|selesai|selesai_otomatis), dikumpulkanPada, timestamps
-AttemptSoal       id, attemptId, soalId, pengelompokanId, urutan, jatahDetik, dibukaPada, ditutupPada, terkunci
-                  unik: (attemptId, soalId)
-Jawaban           id, attemptSoalId, dijawabPada, updatedAt
-JawabanItem       id, jawabanId, itemId, itemJenis(opsi|pernyataan|pasangan), nilaiTeks (nullable), benar(boolean)
-SkorPengelompokan id, attemptId, pengelompokanId, skor, nilaiAmbang, lulus
+QuestionForm     single_choice | true_false | matching
+GradingMode      all_or_nothing | weighted
+TimerMode        global | strict
+TryoutStatus     draft | active
+AttemptStatus    running | submitted | auto_submitted
+ItemType         option | statement | pair
+AttachmentTarget question | explanation
 ```
 
-## 4. Aturan domain
+## 2. Out of scope for phase 1
 
-### 4.1 Undian Soal
+Deliberately postponed. The design is still recorded; the code comes later.
 
-- Saat Attempt dimulai, ambil `jumlah` dari setiap `KuotaSoal` secara acak dari `Soal` **aktif** pada `Pengelompokan Soal` itu.
-- Susunan dikunci ke `AttemptSoal`; urutan = `Pengelompokan Soal` berurutan, lalu acak di dalam kelompok (benih = id Attempt, supaya bisa direproduksi saat investigasi).
-- Kurang dari kuota → **422** `QUOTA_EXCEEDS_BANK` (dicek saat Tryout diaktifkan **dan** saat Attempt dimulai).
-- Satu `Attempt` berjalan per Peserta per Tryout. Mencoba mulai lagi → **409** `ATTEMPT_ALREADY_RUNNING` berisi id Attempt yang sedang jalan (dipakai frontend untuk melanjutkan).
+| Postponed | Reason |
+| --- | --- |
+| `Scraping` module and the `Staging`/`Promotion` screens | no target site exists yet to test the extractor |
+| CSV export of results | the admin result list is enough for now |
+| Admin panel and the whole SolidJS frontend | phase 2 |
+| Deployment files (Dockerfile, compose) | focus on the local machine first |
+| Email (address verification, reset links) | an Admin resets a Participant password instead |
+| Payments and paid packages | the catalogue is open to everyone |
+| Per-question statistics (share of correct answers) | later |
 
-### 4.2 Mode Timer
+## 3. Domain model
 
-Deadline dihitung server. Menutup browser tidak menghentikan apa pun.
+Hierarchy: `Tryout Type` → (`Question Group` → `Question`) and `Tryout Type` → `Tryout` → `Attempt` → `History`.
 
-- `global`: satu `deadlinePada` = `mulaiPada + totalWaktuDetik`. Peserta bebas berpindah Soal.
-- `keras`: `jatahSoalDetik` = ⌊totalWaktuDetik ÷ jumlahSoal⌋; sisa detik pembagian ditambahkan ke Soal terakhir. Jatah per Soal tidak menumpuk: menekan Lanjut lebih awal menghanguskan sisanya. Tidak ada kembali ke Soal sebelumnya. Attempt berakhir setelah Soal terakhir ditutup atau jatahnya habis.
-- Kemajuan Soal di mode `keras` dihitung **malas** (lazy) dari waktu server: setiap permintaan menghitung Soal mana yang sedang terbuka; Soal yang jatahnya lewat tanpa jawaban tertutup dengan nilai 0. Tidak ada scheduler/cron.
-- Aturan di atas berlaku juga saat Peserta menutup browser: menutup browser tidak menghentikan jatah, dan Soal yang terlewat tertutup bernilai 0.
-- Setiap Attempt berakhir otomatis saat deadline lewat: status `selesai_otomatis`, skor dihitung saat itu juga.
+```
+User               id, email (unique), passwordHash, name, role, canViewExplanation, status, timestamps
+RefreshToken       id, userId, tokenHash, expiresAt, revokedAt, createdAt
 
-### 4.3 Penilaian
+TryoutType         id, slug (unique), name, description, sortOrder, active, timestamps
+QuestionGroup      id, tryoutTypeId, name, sortOrder, weight, gradingMode, threshold, timestamps
+                   unique: (tryoutTypeId, name)
 
-- `utuh`: nilai `Bobot` penuh bila seluruh kunci benar; selain itu 0.
-- `berbobot`: jumlah `nilai` dari item yang benar (opsi/pernyataan/pasangan), diisi Admin dan totalnya ≤ `Bobot`.
-- `Skor` per `Pengelompokan Soal`, dibandingkan `Nilai Ambang` masing-masing.
-- `Lulus` = **semua** `Pengelompokan Soal` mencapai ambangnya. Tidak ada ambang total.
-- Soal tak dijawab = 0 poin dan tetap tampil di `Riwayat` sebagai kosong.
-- Skor dihitung sekali, saat Attempt dikumpulkan atau saat deadline lewat; disimpan di `SkorPengelompokan`.
+Question           id, questionGroupId, form, text, explanation (nullable), active, timestamps
+QuestionOption     id, questionId, text, sortOrder, isKey, value                    -- single_choice
+Statement          id, questionId, text, sortOrder, isKey, value                    -- true_false
+MatchingPair       id, questionId, leftText, rightText, sortOrder, value            -- matching
+                   value is a number 0..weight, used only when gradingMode = weighted
+                   single_choice needs exactly one key; true_false may hold one statement
 
-### 4.4 Pembahasan & Hak Pembahasan
+Attachment         id, questionId, target (question|explanation), path, mime, sizeBytes, sortOrder, createdAt
 
-- `Pembahasan` tidak pernah ikut dalam penyajian Soal saat Attempt berjalan.
-- Endpoint khusus `GET /api/soal/:id/pembahasan`: hanya `Peserta` ber-`Hak Pembahasan` (dan Admin/Superadmin). Boleh dipanggil kapan saja — termasuk di tengah pengerjaan (lihat ADR-0004).
-- Tanpa hak → **403** `FORBIDDEN_PEMBAHASAN_ACCESS`.
-- `Hak Pembahasan` diberikan/dicabut Admin lewat editor Peserta, bukan hasil otomatis.
+Tryout             id, tryoutTypeId, slug (unique), title, description, totalTimeSeconds,
+                   timerMode (global|strict), status (draft|active), timestamps
+QuestionQuota      id, tryoutId, questionGroupId, count                    unique: (tryoutId, questionGroupId)
 
-### 4.5 Riwayat
+Attempt            id, tryoutId, participantId, timerMode, totalTimeSeconds, questionCount,
+                   questionSeconds (strict mode), startedAt, deadlineAt,
+                   status (running|submitted|auto_submitted), submittedAt, timestamps
+AttemptQuestion    id, attemptId, questionId, questionGroupId, sortOrder, seconds,
+                   openedAt, closedAt, locked                                 unique: (attemptId, questionId)
+Answer             id, attemptQuestionId, answeredAt, updatedAt
+AnswerItem         id, answerId, itemId, itemType (option|statement|pair), textValue (nullable), isCorrect
+GroupScore         id, attemptId, questionGroupId, score, threshold, passed
+```
 
-- Peserta melihat daftar `Attempt`-nya sendiri (waktu, skor per pengelompokan, status `Lulus`) dan detail per Soal: teks Soal, Jawaban-nya, kunci benarnya.
-- `Pembahasan` pada halaman Riwayat tetap lewat endpoint pembahasan di atas.
+## 4. Domain rules
 
-### 4.6 Akun & peran
+### 4.1 Question Draw
 
-- Registrasi mandiri (email + password), tanpa verifikasi email.
-- `Peserta`: mengerjakan Tryout dan melihat Riwayat. `Admin`: mengelola master, Bank Soal, Tryout, dan Peserta. `Superadmin`: semua itu plus mengelola akun Admin.
-- Lupa password: Admin menyetel ulang password Peserta. Peserta bisa mengganti password sendiri saat sudah masuk.
-- Akun bisa dinonaktifkan Admin; Peserta nonaktif ditolak saat login (**403** `ACCOUNT_INACTIVE`).
+- When an Attempt starts, the API draws `count` Questions per `QuestionQuota`, at random, from the **active** Questions of that `Question Group`.
+- The API freezes the result in `AttemptQuestion`. The order is: groups in `sortOrder`, then Questions shuffled inside each group. The shuffle seed is the Attempt id, so an investigation can reproduce a draw.
+- A draw short of the quota returns **422** `QUOTA_EXCEEDS_BANK`. The API checks this twice: when the Tryout becomes active, and when an Attempt starts.
+- One running Attempt per Participant per Tryout. A second Attempt returns **409** `ATTEMPT_ALREADY_RUNNING` with the id of the running Attempt, so the frontend can resume it.
 
-## 5. Kontrak API
+### 4.2 Timer Mode
 
-Prefiks `/api`. Autentikasi `Authorization: Bearer <access token>`. Dokumentasi Swagger di `/api/docs`.
+The server holds the time. Closing the browser stops nothing.
 
-Error selalu berbentuk kode Inggris + parameter (teks Indonesia ada di berkas locale frontend):
+- `global`: one `deadlineAt` = `startedAt + totalTimeSeconds`. The Participant moves between Questions freely.
+- `strict`: `questionSeconds` = ⌊totalTimeSeconds ÷ questionCount⌋. The API adds the remaining seconds to the last Question. The budget of one Question never carries over: pressing Next early burns the rest. The Participant cannot return to an earlier Question. The Attempt ends after the last Question closes, or when its budget runs out.
+- In `strict` mode the API computes progress **lazily** from the server clock: each request works out which Question is open. A Question whose budget passed without an Answer closes with a Score of 0. There is no scheduler and no cron job.
+- The rule above holds when the Participant closes the browser too: the budget keeps running, and skipped Questions close with a Score of 0.
+- Every Attempt ends automatically when its deadline passes. The status becomes `auto_submitted`, and the API computes the Score at that moment.
+
+### 4.3 Grading
+
+- `all_or_nothing`: the full `Weight` when every key is correct. Otherwise 0.
+- `weighted`: the sum of the `value` of the correct items (option, statement, or pair). An Admin sets each value, and their total must not exceed the `Weight`.
+- One `Score` per `Question Group`. The API compares it against that group's `Threshold`.
+- `Passed` requires **every** `Question Group` to reach its own Threshold. There is no overall threshold.
+- An unanswered Question scores 0 and still appears in `History` as empty.
+- The API computes the Score once: on submission, or when the deadline passes. It stores the result in `GroupScore`.
+
+### 4.4 Explanation and Explanation Access
+
+- The API never sends an `Explanation` together with a Question during a running Attempt.
+- A dedicated endpoint serves it: `GET /api/questions/:id/explanation`. Only a Participant with `Explanation Access` may call it (Admin and Superadmin always may). The call is allowed at any time, including during a running Attempt. See ADR-0004.
+- Without the flag the API returns **403** `FORBIDDEN_EXPLANATION_ACCESS`.
+- An Admin grants or removes `Explanation Access` in the Participant record. The flag never appears on its own.
+
+### 4.5 History
+
+- A Participant sees their own Attempts: the time, the `Score` per group, and the `Passed` status.
+- Per Question, the Participant sees the question text, their own Answer, and the correct key.
+- `Explanation` on the History screens still goes through the endpoint in section 4.4.
+
+### 4.6 Accounts and roles
+
+- Self-registration with email and password. No email verification.
+- `Participant`: works on Tryouts and reads History. `Admin`: manages master data, the Question Bank, Tryouts, and Participants. `Superadmin`: all of that, plus Admin accounts.
+- A forgotten password is reset by an Admin. A Participant can change their own password while signed in.
+- An Admin can deactivate an account. A deactivated Participant is refused at login: **403** `ACCOUNT_INACTIVE`.
+
+## 5. API contract
+
+Prefix `/api`. Authentication uses a bearer access token. Swagger lives at `/api/docs`.
+
+Every error returns an English code plus parameters. The Indonesian text lives in the frontend locale files.
 
 ```json
-{ "error": { "code": "QUOTA_EXCEEDS_BANK", "params": { "pengelompokanId": 7, "butuh": 30, "tersedia": 20 } } }
+{ "error": { "code": "QUOTA_EXCEEDS_BANK", "params": { "questionGroupId": 7, "required": 30, "available": 20 } } }
 ```
 
 | Area | Endpoint |
 | --- | --- |
 | Auth | `POST /auth/register`, `POST /auth/login`, `POST /auth/refresh`, `POST /auth/logout`, `GET /auth/me`, `PATCH /auth/me/password` |
-| Publik | `GET /jenis-tryout`, `GET /jenis-tryout/:slug`, `GET /tryout`, `GET /tryout/:slug`, `GET /health` |
-| Admin master | `CRUD /admin/jenis-tryout`, `CRUD /admin/jenis-tryout/:id/pengelompokan` |
-| Admin soal | `CRUD /admin/soal` (filter pengelompokan/bentuk/aktif), `POST /admin/soal/:id/lampiran`, `DELETE /admin/lampiran/:id` |
-| Lampiran | `GET /lampiran/:id` (berkas publik, tanpa kunci jawaban) |
-| Admin tryout | `CRUD /admin/tryout`, `PUT /admin/tryout/:id/kuota` |
-| Admin peserta | `GET /admin/peserta`, `PATCH /admin/peserta/:id` (status, hakPembahasan), `PATCH /admin/peserta/:id/password` |
-| Admin hasil | `GET /admin/tryout/:id/attempts` |
-| Peserta — Attempt | `POST /tryout/:id/attempts` (mulai), `GET /attempts/berjalan?tryoutId=`, `GET /attempts/:id` (Soal + sisa waktu), `PUT /attempts/:id/jawaban`, `POST /attempts/:id/lanjut` (mode keras), `POST /attempts/:id/kumpulkan` |
-| Riwayat | `GET /me/attempts`, `GET /attempts/:id/hasil` |
-| Pembahasan | `GET /soal/:id/pembahasan` |
+| Public | `GET /tryout-types`, `GET /tryout-types/:slug`, `GET /tryouts`, `GET /tryouts/:slug`, `GET /health` |
+| Admin master data | `CRUD /admin/tryout-types`, `CRUD /admin/tryout-types/:id/question-groups` |
+| Admin Question Bank | `CRUD /admin/questions` (filters: group, form, active), `POST /admin/questions/:id/attachments`, `DELETE /admin/attachments/:id` |
+| Attachments | `GET /attachments/:id` (public file, no keys inside) |
+| Admin Tryouts | `CRUD /admin/tryouts`, `PUT /admin/tryouts/:id/quota` |
+| Admin Participants | `GET /admin/participants`, `PATCH /admin/participants/:id` (status, explanation access), `PATCH /admin/participants/:id/password` |
+| Admin results | `GET /admin/tryouts/:id/attempts` |
+| Participant — Attempt | `POST /tryouts/:id/attempts` (start), `GET /attempts/running?tryoutId=`, `GET /attempts/:id` (questions plus remaining time), `PUT /attempts/:id/answers`, `POST /attempts/:id/next` (strict mode), `POST /attempts/:id/submit` |
+| History | `GET /me/attempts`, `GET /attempts/:id/result` |
+| Explanation | `GET /questions/:id/explanation` |
 
-`GET /attempts/:id` mengembalikan daftar Soal **tanpa kunci dan tanpa pembahasan**, plus `sisaDetik` (mode `global`) atau `sisaJatahDetik` + `nomorSoalAktif` (mode `keras`).
+`GET /attempts/:id` returns the Questions **without keys and without explanations**. It also returns `remainingSeconds` in `global` mode, or `remainingQuestionSeconds` plus `activeQuestionNumber` in `strict` mode.
 
-## 6. Teknis
+## 6. Technical
 
-- Monorepo npm workspaces: `apps/api` (NestJS 11 + TypeScript). `apps/web` (SolidJS) menyusul di fase 2.
-- Drizzle ORM (`drizzle-orm` 0.45 + `drizzle-kit` 0.31, driver `mysql2` 3.24), database `tryout_platform` di MariaDB XAMPP (`127.0.0.1:3306`, user `root` tanpa password) — lihat ADR-0001 dan ADR-0005. Skema ditulis sebagai TypeScript di `apps/api/src/db/schema/`, migrasinya berkas SQL hasil `drizzle-kit generate` yang ikut di-commit. Database uji terpisah: `tryout_platform_test`.
-- `@nestjs/config` + `.env` (disertai `.env.example`), `class-validator` + `ValidationPipe` global (whitelist + transform).
-- Unggah: multer disk storage ke `storage/lampiran/`, batas 2 MB, mime `image/jpeg|png|webp`; disajikan `GET /api/lampiran/:id`.
-- Token: access 15 menit, refresh 7 hari dengan rotasi; refresh disimpan sebagai hash sehingga bisa dicabut (logout).
-- Waktu: semua timestamp UTC di database, durasi selalu dalam detik. Zona tampil (WIB) urusan frontend.
-- Jam disuntik lewat penyedia waktu sendiri agar deadline bisa diuji tanpa menunggu waktu nyata.
-- Pengujian: Jest unit + e2e (supertest) di atas `tryout_platform_test`. Seeder menyiapkan data demo.
+- npm workspaces monorepo. `apps/api` holds the NestJS 11 application. `apps/web` (SolidJS) follows in phase 2.
+- Drizzle ORM (`drizzle-orm` 0.45 and `drizzle-kit` 0.31, driver `mysql2` 3.24). Database `tryout_platform` on the XAMPP MariaDB (`127.0.0.1:3306`, user `root`, no password). See ADR-0001 and ADR-0005. The schema is TypeScript under `apps/api/src/db/schema/`. `drizzle-kit generate` writes SQL migration files, and those files are committed. A separate database `tryout_platform_test` holds the test data.
+- Configuration through `@nestjs/config` and `.env`, with a `.env.example` beside it. Validation through `class-validator` and a global `ValidationPipe` (whitelist and transform).
+- Uploads: multer disk storage into `storage/attachments/`, limit 2 MB, mime `image/jpeg`, `image/png`, or `image/webp`. Served by `GET /api/attachments/:id`.
+- Tokens: access token 15 minutes, refresh token 7 days with rotation. The API stores the refresh token as a hash, so a logout can revoke it.
+- Time: every timestamp is UTC in the database. Every duration is in seconds. Display time (WIB) is the frontend's job.
+- The application injects its own clock provider, so a test can move time forward and check a deadline without waiting.
+- Tests: Jest for units and supertest for end-to-end runs, against `tryout_platform_test`. The seeder prepares the demo data.
 
-## 7. Rencana kerja
+## 7. Work plan
 
-Rincian tiket ada di `docs/TICKETS.md` (11 irisan, urut ketergantungan). Setelah daftar itu disetujui, tiket dipublikasikan sebagai GitHub issue dengan label `ready-for-agent`.
+`docs/TICKETS.md` holds the 11 slices in dependency order. GitHub issues #1 to #11 carry the same slices with native blocking links. Every slice has the label `ready-for-agent`.
 
-## 8. Keputusan yang sudah ditutup
+## 8. Closed decisions
 
-1. **Mode `keras` saat browser ditutup** — jatah tetap berjalan, Soal yang terlewat tertutup bernilai 0 (lihat §4.2). Ditegaskan sadar: konsisten dengan "sisa jatah hangus" dan tidak bisa dicurangi dengan menutup browser.
-2. **Kredensial database** — `root` tanpa password bawaan XAMPP untuk dev lokal; user khusus menyusul saat deploy.
-3. **`benar_salah` satu pernyataan** — Soal dengan tepat satu `Pernyataan`, bukan bentuk tersendiri.
+1. **`strict` mode with the browser closed** — the budget keeps running, and skipped Questions close with a Score of 0 (section 4.2). This is deliberate: it matches the "the leftover budget burns" rule, and a Participant cannot escape the time pressure by closing the browser.
+2. **Database credentials** — `root` with no password (the XAMPP default) on the local machine. A dedicated user follows at deployment time.
+3. **`true_false` with one statement** — a Question with exactly one `Statement`. There is no separate question form for it.
