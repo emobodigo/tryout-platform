@@ -1,5 +1,5 @@
-# Pembahasan boleh dibuka saat Attempt masih berjalan
+# Explanation available while the Attempt runs
 
-Pembahasan dibuka oleh bendera Hak Pembahasan pada akun Peserta, dan boleh diakses kapan saja — termasuk di tengah pengerjaan, bukan hanya setelah Attempt dikumpulkan.
+The Explanation opens through the Explanation Access flag on a Participant account, and a Participant may read it at any time, including in the middle of the work and not only after submission.
 
-Alasan: platform ini alat latihan, bukan ujian berproktor. Memblokir Pembahasan sampai selesai menambah aturan yang tidak diminta, sementara Peserta yang berhak toh bisa mengulang Attempt tanpa batas dan melihat Pembahasan setelahnya. Konsekuensi yang harus disadari: kunci jawaban bisa dibaca sambil mengerjakan oleh Peserta ber-Hak, jadi skor mereka tidak boleh diperlakukan sebagai hasil ujian yang sah. Bila nanti dibutuhkan Tryout bergaya ujian sungguhan, ini titik pertama yang perlu ditinjau ulang.
+Reasons: this platform is a practice tool, not a proctored exam. Blocking the Explanation until submission adds a rule that nobody asked for, and a Participant with the flag can repeat an Attempt without limit and read the Explanation afterwards anyway. The consequence to accept: a Participant with Explanation Access can read the key while they work, so their Score is not a valid exam result. If a Tryout in the style of a real exam is needed later, this is the first decision to revisit.

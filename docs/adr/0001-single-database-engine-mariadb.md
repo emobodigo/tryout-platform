@@ -1,8 +1,8 @@
-# MariaDB sebagai satu-satunya database
+# MariaDB as the single database engine
 
-Mesin pengembangan (macOS 12) tidak punya Docker dan tidak punya PostgreSQL; MariaDB 10.4 sudah tersedia lewat XAMPP dan sudah dipakai proyek lain di mesin yang sama. Diputuskan memakai MariaDB untuk dev maupun produksi supaya dialect dan perilaku query identik di kedua sisi, dengan konsekuensi: dialect MySQL/MariaDB lewat driver `mysql2` (lihat ADR-0005), dan fitur khas PostgreSQL (JSONB, partial index, array) tidak tersedia. Pindah engine di kemudian hari berarti migrasi penuh, jadi keputusan ini sadar diambil meski PostgreSQL secara umum lebih kaya fitur.
+The development machine (macOS 12) has no Docker and no PostgreSQL. MariaDB 10.4 is already present through XAMPP and already serves another project on the same machine. We use MariaDB for development and for production alike, so the dialect and the query behaviour stay identical on both sides. The consequences: the MySQL/MariaDB dialect through the `mysql2` driver (see ADR-0005), and the PostgreSQL-only features (JSONB, partial index, array) are out of reach. A later change of engine means a full migration, so we took this decision knowingly, even though PostgreSQL is the richer database in general.
 
-## Alternatif yang ditolak
+## Rejected alternatives
 
-- **PostgreSQL lokal**: butuh build dari source di mesin ini (tanpa Docker, bottle Homebrew tidak tersedia untuk macOS 12) — biaya setup tidak sebanding untuk fase 1.
-- **SQLite dev → PostgreSQL produksi**: dua engine berarti dialect, tipe kolom, dan perilaku constraint berbeda antara apa yang diuji dan apa yang dipakai Peserta.
+- **Local PostgreSQL**: needs a source build on this machine, because there is no Docker and Homebrew has no bottle for macOS 12. The setup cost is out of proportion for phase 1.
+- **SQLite in development, PostgreSQL in production**: two engines mean the dialect, the column types, and the constraint behaviour differ between what we test and what Participants use.

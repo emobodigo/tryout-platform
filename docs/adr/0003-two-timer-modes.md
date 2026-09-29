@@ -1,5 +1,5 @@
-# Dua Mode Timer: `global` dan `keras`
+# Two Timer Modes: `global` and `strict`
 
-Tryout CPNS/BUMN/OJK asli memakai hitungan mundur global dengan kebebasan berpindah Soal, tetapi permintaan awal platform ini adalah jatah waktu per Soal. Diputuskan mendukung keduanya: `global` (satu hitungan mundur untuk seluruh Attempt) dan `keras` (jatah per Soal = total waktu ÷ jumlah Soal, sisa jatah hangus bila Peserta menekan Lanjut lebih awal, tidak bisa kembali ke Soal sebelumnya).
+A real CPNS/BUMN/OJK tryout uses one global countdown with free movement between Questions, but the original request for this platform was a budget per Question. We support both: `global` (one countdown for the whole Attempt) and `strict` (a budget per Question = total time ÷ number of Questions, the leftover budget burns when the Participant presses Next early, and there is no way back).
 
-Alasan: satu mode saja memaksa salah satu jenis ujian dipeluk dengan buruk — global kehilangan tekanan waktu per Soal, keras menabrak kebiasaan CAT. Konsekuensi: mesin sesi punya dua jalur deadline (deadline Attempt dan deadline Soal berjalan), keduanya dihitung server agar menutup browser tidak menghentikan waktu. Di kedua mode, Peserta tetap boleh mengumpulkan Attempt lebih awal.
+Reasons: one mode alone would force one kind of exam into a bad fit — `global` loses the pressure of a per-Question clock, `strict` breaks the CAT habit. The consequences: the session engine has two deadline paths, the Attempt deadline and the running Question deadline, and the server computes both, so closing the browser stops nothing. In either mode a Participant may submit early.

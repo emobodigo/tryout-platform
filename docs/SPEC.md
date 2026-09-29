@@ -2,7 +2,7 @@
 
 Phase 1 delivers **the backend only**: a REST API with Swagger documentation and a demo seeder. No frontend.
 
-Vocabulary follows `CONTEXT.md`. Section 1.1 maps each English name to its glossary term. The English names are the names used in code.
+Vocabulary follows `CONTEXT.md`. The names in that glossary are the names used in code.
 
 ## 1. Scope
 
@@ -15,37 +15,7 @@ The API makes one Tryout platform work end to end:
 - `History` and `Explanation`, both gated by the `Explanation Access` flag.
 - Accounts: self-registration, and the roles `Participant`, `Admin`, `Superadmin`.
 
-### 1.1 Vocabulary map
-
-| English name (code) | `CONTEXT.md` term |
-| --- | --- |
-| Tryout Type | Jenis Tryout |
-| Tryout | Tryout |
-| Question Group | Pengelompokan Soal |
-| Question Form | Bentuk Soal |
-| Grading Mode | Mode Penilaian |
-| Weight | Bobot |
-| Threshold | Nilai Ambang |
-| Score | Skor |
-| Passed | Lulus |
-| Question | Soal |
-| Question Bank | Bank Soal |
-| Staging | Staging |
-| Scraping | Scraping |
-| Promotion | Promosi |
-| Explanation | Pembahasan |
-| Attachment | Lampiran |
-| Explanation Access | Hak Pembahasan |
-| Question Quota | Kuota Soal |
-| Question Draw | Undian Soal |
-| Attempt | Attempt |
-| History | Riwayat |
-| Answer | Jawaban |
-| Timer Mode | Mode Timer |
-| Participant | Peserta |
-| Admin / Superadmin | Admin / Superadmin |
-
-Enum values:
+### 1.1 Enum values
 
 ```
 QuestionForm     single_choice | true_false | matching

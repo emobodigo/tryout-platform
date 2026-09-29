@@ -13,7 +13,7 @@ Vertical slices of `docs/SPEC.md`: each ticket cuts through schema → API → t
 | T5 | #5 | T11 | #11 |
 | T6 | #6 | | |
 
-Ticket wording uses the English names from `docs/SPEC.md` section 1.1, which map to the terms in `CONTEXT.md`.
+Ticket wording follows the vocabulary in `CONTEXT.md`.
 
 ---
 

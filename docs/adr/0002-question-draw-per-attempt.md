@@ -1,5 +1,5 @@
-# Undian Soal per Attempt, bukan daftar Soal tetap
+# Question Draw per Attempt, not a fixed question list
 
-Setiap Tryout menyimpan Kuota Soal per Pengelompokan (mis. TWK 30), dan susunan Soal sebuah Attempt diundi dari Bank Soal saat Attempt dimulai lalu dikunci. Alternatif yang ditolak adalah Admin memilih satu daftar Soal tetap yang sama untuk semua Peserta.
+Each Tryout keeps a Question Quota per Question Group (for example TWK 30). The API draws the Questions of an Attempt from the Question Bank when the Attempt starts, and then freezes them. The rejected alternative was an Admin building one fixed Question list that every Participant receives.
 
-Alasan: Bank Soal terus bertambah dan platform tidak mau Admin menyusun ulang daftar tiap kali ada Soal baru. Konsekuensi yang harus disadari: skor antar Attempt tidak sepenuhnya sebanding karena soalnya berbeda, jadi Nilai Ambang dibaca sebagai ambang internal platform, bukan pembanding mutlak antar Peserta. Attempt tidak dibatasi jumlahnya, sehingga Peserta boleh mengulang sampai puas; karena Soal yang keluar bisa berbeda, mengulang tidak otomatis berarti menghafal kunci.
+Reasons: the Question Bank keeps growing, and we do not want an Admin to rebuild a list each time a Question arrives. The consequence to accept: the Score of one Attempt does not compare perfectly with another, because the Questions differ. Read the Threshold as an internal platform level, not as an absolute comparison between Participants. The number of Attempts has no limit, so a Participant can repeat a Tryout as often as they like; because the draw differs, repetition does not automatically mean memorising the key.

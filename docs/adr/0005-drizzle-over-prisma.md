@@ -1,13 +1,13 @@
-# Drizzle ORM, bukan Prisma
+# Drizzle ORM, not Prisma
 
-Skema database ditulis sebagai TypeScript biasa di `apps/api/src/db/schema/`, migrasi dihasilkan `drizzle-kit generate` menjadi berkas SQL yang ikut di-commit, dan koneksi memakai driver `mysql2` (`drizzle-orm` 0.45, `drizzle-kit` 0.31, `mysql2` 3.24).
+The schema is plain TypeScript under `apps/api/src/db/schema/`. `drizzle-kit generate` writes SQL migration files, and those files are committed. The connection uses the `mysql2` driver (`drizzle-orm` 0.45, `drizzle-kit` 0.31, `mysql2` 3.24).
 
-Alasan: Drizzle murni JavaScript, jadi `npm install` tidak pernah mengunduh engine biner terpisah — mesin pengembangan ini sudah beberapa kali tersendat pada unduhan biner dari rilis GitHub. Migrasinya berkas SQL yang bisa dibaca dan disunting manusia, dan tidak ada proses `generate client` yang harus diulang tiap kali skema berubah.
+Reasons: Drizzle is pure JavaScript, so `npm install` never downloads a separate engine binary — this development machine has stalled more than once on binary downloads from GitHub releases. The migrations are SQL files that a human can read and edit, and there is no `generate client` step to repeat after every schema change.
 
-Konsekuensi yang harus disadari: tidak ada eager loading bawaan seperti Prisma, jadi setiap query yang menyentuh beberapa tabel harus menulis join-nya sendiri — bentuk join yang keliru tetap lolos tipe, sehingga query lintas tabel perlu uji sendiri. Padanan GUI inspeksi data tidak selengkap Prisma Studio. Berpindah ORM berarti menulis ulang seluruh lapisan akses data.
+Consequences to accept: there is no eager loading like the Prisma `include`, so every query that touches several tables writes its own joins, and a wrong join shape still passes the type check; a cross-table query therefore needs its own test. The data-inspection GUI is not as complete as Prisma Studio. A move to another ORM means rewriting the whole data-access layer.
 
-## Alternatif yang ditolak
+## Rejected alternatives
 
-- **Prisma**: engine biner saat instalasi dan langkah `generate client` yang harus dijalankan ulang setiap kali skema berubah.
-- **TypeORM**: dekorator dan entity tersebar, riwayat migrasinya rawan bentrok pada proyek yang bergerak cepat.
-- **Kysely / SQL mentah**: kontrol penuh, tapi kehilangan definisi skema sebagai satu sumber kebenaran untuk tipe dan migrasi.
+- **Prisma**: an engine binary at install time, and a `generate client` step that must run again after every schema change.
+- **TypeORM**: decorators and entities spread across the code, and a migration history that collides easily on a fast-moving project.
+- **Kysely / raw SQL**: full control, but the schema stops being one source of truth for both the types and the migrations.
